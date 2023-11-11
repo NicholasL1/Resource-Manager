@@ -78,7 +78,6 @@ int main(int argc, char *argv[])
 
   // Read the number of tasks and the number of resources
   fscanf(fp1, "%d %d", &num_of_tasks, &num_of_resources);
-  fscanf(fp2, "%d %d", &num_of_tasks, &num_of_resources);
 
   // Create an array to store the units of each resource
   int resource_units[num_of_resources];
@@ -86,11 +85,10 @@ int main(int argc, char *argv[])
   // Read the units of each resource resource x units = num_of_resources[x-1]
   for (int i = 0; i < num_of_resources; i++)
   {
-    if (fscanf(fp1, "%d", &resource_units[i]) != 1 || fscanf(fp2, "%d", &resource_units[i]) != 1)
+    if (fscanf(fp1, "%d", &resource_units[i]) != 1)
     {
       printf("Error reading resource units from the file.\n");
       fclose(fp1);
-      fclose(fp2);
       return 1;
     }
   }
@@ -99,6 +97,14 @@ int main(int argc, char *argv[])
   Queue *task_activitiesORM[num_of_tasks];
   Queue *task_activitiesBA[num_of_tasks];
   readInput(num_of_tasks, fp1, task_activitiesORM);
+
+  rewind(fp2);
+  // Skip the first line in fp1
+  while (fgetc(fp2) != '\n')
+  {
+    // Continue reading characters until a newline is encountered
+  }
+
   readInput(num_of_tasks, fp2, task_activitiesBA);
 
   if (num_of_tasks > 0)
@@ -108,27 +114,25 @@ int main(int argc, char *argv[])
     int totalTimeWaited = 0;
     // // Optimistic resource manager
 
-    // optimistic_resource_manager(num_of_tasks, num_of_resources, resource_units, task_activitiesORM);
-    // printf("\tFIFO\n");
-    // for (int i = 0; i < num_of_tasks; i++)
-    // {
-    //   if (abortedTasks[i] != 1)
-    //   {
-    //     percentage = ((double)timeWaited[i] / totalTime[i] * 100);
-    //     printf("Task %d\t%d\t%d\t%.0f%%\n", i + 1, totalTime[i], timeWaited[i], percentage);
-    //     totalTimeTaken += totalTime[i];
-    //     totalTimeWaited += timeWaited[i];
-    //   }
-    //   else
-    //   {
-    //     printf("Task %d \taborted\n", i + 1);
-    //   }
-    //   free(requestedUnits[i]);
-    // }
-    // percentage = ((double)totalTimeWaited / totalTimeTaken * 100);
-    // printf("total\t%d\t%d\t%.0f%%\n", totalTimeTaken, totalTimeWaited, percentage);
-
-    // readInput(num_of_tasks, fp2, task_activitiesBA);
+    optimistic_resource_manager(num_of_tasks, num_of_resources, resource_units, task_activitiesORM);
+    printf("\tFIFO\n");
+    for (int i = 0; i < num_of_tasks; i++)
+    {
+      if (abortedTasks[i] != 1)
+      {
+        percentage = ((double)timeWaited[i] / totalTime[i] * 100);
+        printf("Task %d\t%d\t%d\t%.0f%%\n", i + 1, totalTime[i], timeWaited[i], percentage);
+        totalTimeTaken += totalTime[i];
+        totalTimeWaited += timeWaited[i];
+      }
+      else
+      {
+        printf("Task %d \taborted\n", i + 1);
+      }
+      free(requestedUnits[i]);
+    }
+    percentage = ((double)totalTimeWaited / totalTimeTaken * 100);
+    printf("total\t%d\t%d\t%.0f%%\n", totalTimeTaken, totalTimeWaited, percentage);
 
     // Bankers algorithm
 
