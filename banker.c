@@ -17,7 +17,12 @@
 #include "activityQueue.h"
 
 int finishedTasks;
+int num_of_tasks;
+int num_of_resources;
 
+Queue **task_activities;
+
+int *resource_units;
 int *totalTime;
 int *timeWaited;
 int **requestedUnits;
@@ -29,7 +34,7 @@ int *skipTasks;
 int **initialClaims;
 char **messages;
 
-void readInput(int num_of_tasks, FILE *fp, Queue *task_activities[]);
+void readInput(int argc, char *argv[]);
 // Algos
 void optimistic_resource_manager(int num_of_tasks, int num_of_resources, int resource_units[], Queue *task_activities[]);
 void bankers_algorithm(int num_of_tasks, int num_of_resources, int resource_units[], Queue *task_activities[]);
@@ -54,58 +59,11 @@ char *errorCheck(int resource_units[], int task_index, int resource_index, int t
 
 int main(int argc, char *argv[])
 {
-  FILE *fp1;
-  FILE *fp2;
 
   argc = argc;
 
-  int num_of_tasks;
-  int num_of_resources;
-
-  if (argc != 2)
-  {
-    printf("Usage: %s <input_file>\n", argv[0]);
-    return 1;
-  }
-
-  fp1 = fopen(argv[1], "r");
-  fp2 = fopen(argv[1], "r");
-  if (fp1 == NULL || fp2 == NULL)
-  {
-    perror("Error opening file");
-    return 1;
-  }
-
-  // Read the number of tasks and the number of resources
-  fscanf(fp1, "%d %d", &num_of_tasks, &num_of_resources);
-
-  // Create an array to store the units of each resource
-  int resource_units[num_of_resources];
-
-  // Read the units of each resource resource x units = num_of_resources[x-1]
-  for (int i = 0; i < num_of_resources; i++)
-  {
-    if (fscanf(fp1, "%d", &resource_units[i]) != 1)
-    {
-      printf("Error reading resource units from the file.\n");
-      fclose(fp1);
-      return 1;
-    }
-  }
-
   // Create an array of queues to hold activities for each task
-  Queue *task_activitiesORM[num_of_tasks];
-  Queue *task_activitiesBA[num_of_tasks];
-  readInput(num_of_tasks, fp1, task_activitiesORM);
-
-  rewind(fp2);
-  // Skip the first line in fp1
-  while (fgetc(fp2) != '\n')
-  {
-    // Continue reading characters until a newline is encountered
-  }
-
-  readInput(num_of_tasks, fp2, task_activitiesBA);
+  readInput(argc, argv);
 
   if (num_of_tasks > 0)
   {
@@ -114,7 +72,7 @@ int main(int argc, char *argv[])
     int totalTimeWaited = 0;
     // // Optimistic resource manager
 
-    optimistic_resource_manager(num_of_tasks, num_of_resources, resource_units, task_activitiesORM);
+    optimistic_resource_manager(num_of_tasks, num_of_resources, resource_units, task_activities);
     printf("\tFIFO\n");
     for (int i = 0; i < num_of_tasks; i++)
     {
@@ -134,12 +92,16 @@ int main(int argc, char *argv[])
     percentage = ((double)totalTimeWaited / totalTimeTaken * 100);
     printf("total\t%d\t%d\t%.0f%%\n", totalTimeTaken, totalTimeWaited, percentage);
 
+    free(task_activities);
+    free(resource_units);
+    readInput(argc, argv);
+
     // Bankers algorithm
 
     percentage = 0;
     totalTimeTaken = 0;
     totalTimeWaited = 0;
-    bankers_algorithm(num_of_tasks, num_of_resources, resource_units, task_activitiesBA);
+    bankers_algorithm(num_of_tasks, num_of_resources, resource_units, task_activities);
     printf("\tBANKER'S\n");
     for (int i = 0; i < num_of_tasks; i++)
     {
@@ -166,15 +128,33 @@ int main(int argc, char *argv[])
     percentage = ((double)totalTimeWaited / totalTimeTaken * 100);
     printf("total\t%d\t%d\t%.0f%%\n", totalTimeTaken, totalTimeWaited, percentage);
   }
-
-  fclose(fp1);
-  fclose(fp2);
-
   return 0;
 }
 
-void readInput(int num_of_tasks, FILE *fp, Queue *task_activities[])
+void readInput(int argc, char *argv[])
 {
+  FILE *fp;
+
+  fp = fopen(argv[1], "r");
+
+  // Read the number of tasks and the number of resources
+  fscanf(fp, "%d %d", &num_of_tasks, &num_of_resources);
+
+  resource_units = (int *)malloc(num_of_resources * sizeof(int));
+
+  // Read the units of each resource resource x units = num_of_resources[x-1]
+  for (int i = 0; i < num_of_resources; i++)
+  {
+    if (fscanf(fp, "%d", &resource_units[i]) != 1)
+    {
+      printf("Error reading resource units from the file.\n");
+      fclose(fp);
+    }
+  }
+
+  task_activities = (Queue **)malloc(num_of_tasks * sizeof(Queue *));
+
+  // Create activity queues for each task
   for (int i = 0; i < num_of_tasks; i++)
   {
     task_activities[i] = createActivityQueue();
@@ -197,6 +177,8 @@ void readInput(int num_of_tasks, FILE *fp, Queue *task_activities[])
     // Enqueue the new activity to the corresponding task's queue
     enqueueActivity(task_activities[task_number - 1], new_activity);
   }
+
+  fclose(fp);
 }
 
 // Main method for the optimistic resource manager
