@@ -35,13 +35,13 @@ int **initialClaims;
 char **messages;
 
 // Read input file
-void readInput(int argc, char *argv[]);
+void readInput(char *argv[]);
 // Algos
 void optimistic_resource_manager(int num_of_tasks, int num_of_resources, int resource_units[], Queue *task_activities[]);
 void bankers_algorithm(int num_of_tasks, int num_of_resources, int resource_units[], Queue *task_activities[]);
 // Activity handling
-void handleActivities(int num_of_tasks, int num_of_resources, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities, int releasedUnits[], int timer);
-void handleActivitiesBA(int num_of_tasks, int num_of_resources, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities, int releasedUnits[], int timer);
+void handleActivities(int num_of_tasks, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities, int releasedUnits[], int timer);
+void handleActivitiesBA(int num_of_tasks, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities, int releasedUnits[], int timer);
 // Request handling
 void handleRequest(int index, int resource_type, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities);
 void handleRequestBA(int index, int resource_type, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities, int timer);
@@ -53,18 +53,20 @@ void checkBlockedTasksBA(int resource_units[], List *blockedActivities, int bloc
 // Updating blocked task IDs
 void updateBlockedTaskIDs(int num_of_tasks, int blockedTaskIDs[], List *blockedActivities);
 // Aborting
-void abortTasks(int num_of_tasks, Queue *task_activities[], List *blockedActivities, int resource_units[], int blockedTaskIDs[]);
-void bankersAbort(int task_index, char *message, Queue *task_activities[], int resource_units[]);
+void abortTasks(int num_of_tasks, Queue *task_activities[], List *blockedActivities, int resource_units[]);
+void bankersAbort(int task_index, Queue *task_activities[], int resource_units[]);
 // Error check for BA
 char *errorCheck(int resource_units[], int task_index, int resource_index, int timer, int unit_amount);
 
 int main(int argc, char *argv[])
 {
-
-  argc = argc;
-
+  if (argc != 2)
+  {
+    printf("Incorrect input");
+    return 1;
+  }
   // Create an array of queues to hold activities for each task
-  readInput(argc, argv);
+  readInput(argv);
 
   if (num_of_tasks > 0)
   {
@@ -95,7 +97,7 @@ int main(int argc, char *argv[])
 
     free(task_activities);
     free(resource_units);
-    readInput(argc, argv);
+    readInput(argv);
 
     // Bankers algorithm
 
@@ -132,7 +134,7 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-void readInput(int argc, char *argv[])
+void readInput(char *argv[])
 {
   FILE *fp;
 
@@ -219,12 +221,12 @@ void optimistic_resource_manager(int num_of_tasks, int num_of_resources, int res
   {
     // Check blocked tasks, then handle the activities sequentially
     checkBlockedTasks(resource_units, blockedActivities, blockedTaskIDs);
-    handleActivities(num_of_tasks, num_of_resources, resource_units, task_activities, blockedTaskIDs, blockedActivities, releasedUnits, timer);
+    handleActivities(num_of_tasks, resource_units, task_activities, blockedTaskIDs, blockedActivities, releasedUnits, timer);
 
     // If the amount of blocked tasks is the same as the number of tasks - finished ones and they are not 0, then abort the tasks
     if (blockedActivities->size == num_of_tasks - finishedTasks && blockedActivities->size != 0)
     {
-      abortTasks(num_of_tasks, task_activities, blockedActivities, resource_units, blockedTaskIDs);
+      abortTasks(num_of_tasks, task_activities, blockedActivities, resource_units);
     }
     updateBlockedTaskIDs(num_of_tasks, blockedTaskIDs, blockedActivities); // Update the blocked task IDs
     // Allocate resources back to their resource type after resources are released
@@ -288,14 +290,14 @@ void bankers_algorithm(int num_of_tasks, int num_of_resources, int resource_unit
   {
     // Checks blocked tasks then handle activities
     checkBlockedTasksBA(resource_units, blockedActivities, blockedTaskIDs, task_activities, timer, num_of_resources);
-    handleActivitiesBA(num_of_tasks, num_of_resources, resource_units, task_activities, blockedTaskIDs, blockedActivities, releasedUnits, timer);
+    handleActivitiesBA(num_of_tasks, resource_units, task_activities, blockedTaskIDs, blockedActivities, releasedUnits, timer);
 
     // If any of the tasks need to be aborted, abort them and release their requested resources
     for (int i = 0; i < num_of_tasks; i++)
     {
       if (bankersAbortCheck[i] == 1)
       {
-        bankersAbort(i, messages[i], task_activities, resource_units); // Abort the i+1 task and release its requestedUnits
+        bankersAbort(i, task_activities, resource_units); // Abort the i+1 task and release its requestedUnits
       }
     }
     updateBlockedTaskIDs(num_of_tasks, blockedTaskIDs, blockedActivities); // Update blocked task IDs
@@ -310,7 +312,7 @@ void bankers_algorithm(int num_of_tasks, int num_of_resources, int resource_unit
 }
 
 // Handle the incoming activity
-void handleActivities(int num_of_tasks, int num_of_resources, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities, int releasedUnits[], int timer)
+void handleActivities(int num_of_tasks, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities, int releasedUnits[], int timer)
 {
   int hold = 0;
   for (int i = 0; i < num_of_tasks; i++)
@@ -354,7 +356,7 @@ void handleActivities(int num_of_tasks, int num_of_resources, int resource_units
 }
 
 // Handling the activities for bankers
-void handleActivitiesBA(int num_of_tasks, int num_of_resources, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities, int releasedUnits[], int timer)
+void handleActivitiesBA(int num_of_tasks, int resource_units[], Queue *task_activities[], int blockedTaskIDs[], List *blockedActivities, int releasedUnits[], int timer)
 {
   int hold = 0;
   char *message;
@@ -572,7 +574,7 @@ void updateBlockedTaskIDs(int num_of_tasks, int blockedTaskIDs[], List *blockedA
 }
 
 // Abort tasks until we can grant requests if the system is deadlocked
-void abortTasks(int num_of_tasks, Queue *task_activities[], List *blockedActivities, int resource_units[], int blockedTaskIDs[])
+void abortTasks(int num_of_tasks, Queue *task_activities[], List *blockedActivities, int resource_units[])
 {
   // Resource type causing deadlock
   int resource_index = blockedActivities->head->data->resource_type - 1;
@@ -645,7 +647,7 @@ char *errorCheck(int resource_units[], int task_index, int resource_index, int t
 }
 
 // Abort the given task because it failed the bankers algorithm error check and released its requested units
-void bankersAbort(int task_index, char *message, Queue *task_activities[], int resource_units[])
+void bankersAbort(int task_index, Queue *task_activities[], int resource_units[])
 {
   int resource_index = 0;
   resource_index = task_activities[task_index]->front->data->resource_type - 1;
