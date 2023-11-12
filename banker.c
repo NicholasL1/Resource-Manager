@@ -34,6 +34,7 @@ int *skipTasks;
 int **initialClaims;
 char **messages;
 
+// Read input file
 void readInput(int argc, char *argv[]);
 // Algos
 void optimistic_resource_manager(int num_of_tasks, int num_of_resources, int resource_units[], Queue *task_activities[]);
@@ -163,6 +164,7 @@ void readInput(int argc, char *argv[])
   char action[20];
   int task_number = 0;
 
+  // Scan the activities and task numbers associated with them into the queue for that task
   while (fscanf(fp, "%s %d", action, &task_number) == 2)
   {
     // Create an activity
